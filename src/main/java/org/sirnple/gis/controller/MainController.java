@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Description:
  */
 @RestController
-@RequestMapping("hello_gis")
+@RequestMapping("/hello_gis")
 public class MainController {
     @GetMapping("")
     public String helloGis() {

@@ -1,5 +1,7 @@
 package org.sirnple.gis.controller;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.sirnple.gis.payload.UploadFileResponse;
 import org.sirnple.gis.service.FileService;
 import org.slf4j.Logger;
@@ -25,13 +27,15 @@ import java.util.stream.Collectors;
  * Description:
  */
 @RestController
-@RequestMapping("file")
+@RequestMapping("/file")
+@Api(tags = "文件传输")
 public class FileController {
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
     @Autowired
     private FileService fileService;
 
     @PostMapping("/uploadFile")
+    @ApiOperation(value = "上传文件", httpMethod = "POST", notes = "单个文件上传")
     public UploadFileResponse uploadFile(@RequestParam("file") MultipartFile file) {
         String fileName = fileService.storeFile(file);
 
@@ -46,13 +50,15 @@ public class FileController {
     }
 
     @PostMapping("/uploadMultipleFiles")
-    public List<UploadFileResponse> uploadMultipleFiles(@RequestParam("files") MultipartFile[] files) {
+    @ApiOperation(value = "上传多个文件", httpMethod = "POST", notes = "多个文件上传")
+    public List<UploadFileResponse> uploadMultipleFiles(@RequestParam("file") MultipartFile[] files) {
         return Arrays.stream(files)
                 .map(this::uploadFile)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/downloadFile/{fileName:.+}")
+    @ApiOperation(value = "下载文件", httpMethod = "GET", notes = "单个文件下载")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
         // Load file as Resource
         Resource resource = fileService.loadFileAsResource(fileName);
