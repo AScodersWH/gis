@@ -12,6 +12,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FileStorageProperties {
     private String uploadDir;
+    private String porePressureDir;
+    private String flowRateDir;
+    private String seabedSlidingDir;
+    private String waveDir;
 
     public String getUploadDir() {
         return uploadDir;
@@ -19,5 +23,37 @@ public class FileStorageProperties {
 
     public void setUploadDir(String uploadDir) {
         this.uploadDir = uploadDir;
+    }
+
+    public String getPorePressureDir() {
+        return porePressureDir;
+    }
+
+    public void setPorePressureDir(String porePressureDir) {
+        this.porePressureDir = porePressureDir;
+    }
+
+    public String getFlowRateDir() {
+        return flowRateDir;
+    }
+
+    public void setFlowRateDir(String flowRateDir) {
+        this.flowRateDir = flowRateDir;
+    }
+
+    public String getSeabedSlidingDir() {
+        return seabedSlidingDir;
+    }
+
+    public void setSeabedSlidingDir(String seabedSlidingDir) {
+        this.seabedSlidingDir = seabedSlidingDir;
+    }
+
+    public String getWaveDir() {
+        return waveDir;
+    }
+
+    public void setWaveDir(String waveDir) {
+        this.waveDir = waveDir;
     }
 }

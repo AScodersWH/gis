@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by: sirnple
@@ -24,22 +26,38 @@ import java.nio.file.StandardCopyOption;
  */
 @Service
 public class FileServiceImpl implements FileService {
-    private final Path fileStorageLocation;
+    private final Path porePressureDir;
+    private final Path flowRateDir;
+    private final Path seabedSlidingDir;
+    private final Path waveDir;
 
     @Autowired
     public FileServiceImpl(FileStorageProperties fileStorageProperties) {
-        this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
+        Path fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
+                .toAbsolutePath().normalize();
+        this.porePressureDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getPorePressureDir())
+                .toAbsolutePath().normalize();
+
+        this.flowRateDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getFlowRateDir())
+                .toAbsolutePath().normalize();
+        this.seabedSlidingDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getSeabedSlidingDir())
+                .toAbsolutePath().normalize();
+        this.waveDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getWaveDir())
                 .toAbsolutePath().normalize();
 
         try {
-            Files.createDirectories(this.fileStorageLocation);
+            Files.createDirectories(fileStorageLocation);
+            Files.createDirectories(this.porePressureDir);
+            Files.createDirectories(this.flowRateDir);
+            Files.createDirectories(this.seabedSlidingDir);
+            Files.createDirectories(this.waveDir);
         } catch (Exception ex) {
             throw new FileStorageException("Could not create the directory where the uploaded files will be stored.", ex);
         }
     }
 
     @Override
-    public String storeFile(MultipartFile file) {
+    public String storeFile(Path dir, MultipartFile file) {
         // Normalize file name
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
@@ -50,7 +68,7 @@ public class FileServiceImpl implements FileService {
             }
 
             // Copy file to the target location (Replacing existing file with the same name)
-            Path targetLocation = this.fileStorageLocation.resolve(fileName);
+            Path targetLocation = dir.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             return fileName;
@@ -60,9 +78,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Resource loadFileAsResource(String fileName) {
+    public Resource loadFileAsResource(Path dir, String fileName) {
         try {
-            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            Path filePath = dir.resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists()) {
                 return resource;
@@ -72,5 +90,15 @@ public class FileServiceImpl implements FileService {
         } catch (MalformedURLException ex) {
             throw new FileNotFoundException("File not found " + fileName, ex);
         }
+    }
+
+    @Override
+    public Map<String, String[]> loadAll() {
+        Map<String, String[]> allFiles = new HashMap<>();
+        allFiles.put(this.porePressureDir.toFile().getName(), this.porePressureDir.toFile().list());
+        allFiles.put(this.flowRateDir.toFile().getName(), this.flowRateDir.toFile().list());
+        allFiles.put(this.seabedSlidingDir.toFile().getName(), this.seabedSlidingDir.toFile().list());
+        allFiles.put(this.waveDir.toFile().getName(), this.waveDir.toFile().list());
+        return allFiles;
     }
 }
