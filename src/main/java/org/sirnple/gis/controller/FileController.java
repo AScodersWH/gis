@@ -4,7 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.sirnple.gis.config.FileStorageProperties;
-import org.sirnple.gis.exception.FileUploadException;
+import org.sirnple.gis.global.constant.Dir;
 import org.sirnple.gis.payload.UploadFileResponse;
 import org.sirnple.gis.service.FileService;
 import org.slf4j.Logger;
@@ -21,7 +21,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,23 +44,17 @@ public class FileController {
     @PostMapping("/uploadFile")
     @ApiOperation(value = "上传文件", httpMethod = "POST", notes = "单个文件上传")
     public UploadFileResponse uploadFile(@RequestParam("dir") @ApiParam(allowableValues = "pore_pressure, flow_rate, seabed_sliding, wave") @NotNull String dir, @RequestParam("file") MultipartFile file) {
-        if (dir.equals(this.fileStorageProperties.getPorePressureDir())
-                || dir.equals(this.fileStorageProperties.getFlowRateDir())
-                || dir.equals(this.fileStorageProperties.getSeabedSlidingDir())
-                || dir.equals(this.fileStorageProperties.getWaveDir())) {
 
-            String fileName = fileService.storeFile(Paths.get(this.fileStorageProperties.getUploadDir(), dir), file);
+        String fileName = this.fileService.storeFile(Dir.parseDir(dir), file);
+        String fileDownloadUri =
+                ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/downloadFile/")
+                        .path(fileName)
+                        .encode()
+                        .toUriString();
 
-            String fileDownloadUri =
-                    ServletUriComponentsBuilder.fromCurrentContextPath()
-                            .path("/downloadFile/")
-                            .path(fileName)
-                            .toUriString();
-
-            return new UploadFileResponse(fileName, fileDownloadUri,
-                    file.getContentType(), file.getSize());
-        }
-        throw new FileUploadException("参数错误，不能上传到dir=" + dir);
+        return new UploadFileResponse(fileName, fileDownloadUri,
+                file.getContentType(), file.getSize());
     }
 
     @PostMapping("/uploadMultipleFiles")
@@ -76,7 +69,7 @@ public class FileController {
     @ApiOperation(value = "下载文件", httpMethod = "GET", notes = "单个文件下载")
     public ResponseEntity<Resource> downloadFile(@RequestParam @ApiParam(allowableValues = "pore_pressure, flow_rate, seabed_sliding, wave") @NotNull String dir, @RequestParam String fileName, HttpServletRequest request) {
         // Load file as Resource
-        Resource resource = fileService.loadFileAsResource(Paths.get(this.fileStorageProperties.getUploadDir(), dir), fileName);
+        Resource resource = fileService.loadFileAsResource(Dir.parseDir(dir), fileName);
 
         // Try to determine file's content type
         String contentType = null;
@@ -98,7 +91,14 @@ public class FileController {
     }
 
     @GetMapping("/uploads")
+    @ApiOperation(value = "查询所有文件", httpMethod = "GET", notes = "查询所有文件")
     public Map<String, String[]> listAllFile() {
         return fileService.loadAll();
+    }
+
+    @DeleteMapping("/delete")
+    @ApiOperation(value = "删除文件", httpMethod = "DELETE", notes = "删除文件")
+    public void deleteFile(@RequestParam("dir") @ApiParam(allowableValues = "pore_pressure, flow_rate, seabed_sliding, wave") String dir, @RequestParam("fileName") String fileName) {
+        this.fileService.deleteFile(Dir.parseDir(dir), fileName);
     }
 }

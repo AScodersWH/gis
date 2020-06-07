@@ -3,6 +3,7 @@ package org.sirnple.gis.service;
 import org.sirnple.gis.config.FileStorageProperties;
 import org.sirnple.gis.exception.FileNotFoundException;
 import org.sirnple.gis.exception.FileStorageException;
+import org.sirnple.gis.global.constant.Dir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,38 +28,21 @@ import java.util.Map;
  */
 @Service
 public class FileServiceImpl implements FileService {
-    private final Path porePressureDir;
-    private final Path flowRateDir;
-    private final Path seabedSlidingDir;
-    private final Path waveDir;
+    private final Path fileStorageLocation;
 
     @Autowired
     public FileServiceImpl(FileStorageProperties fileStorageProperties) {
-        Path fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
+        this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
                 .toAbsolutePath().normalize();
-        this.porePressureDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getPorePressureDir())
-                .toAbsolutePath().normalize();
-
-        this.flowRateDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getFlowRateDir())
-                .toAbsolutePath().normalize();
-        this.seabedSlidingDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getSeabedSlidingDir())
-                .toAbsolutePath().normalize();
-        this.waveDir = Paths.get(fileStorageProperties.getUploadDir(), fileStorageProperties.getWaveDir())
-                .toAbsolutePath().normalize();
-
-        try {
-            Files.createDirectories(fileStorageLocation);
-            Files.createDirectories(this.porePressureDir);
-            Files.createDirectories(this.flowRateDir);
-            Files.createDirectories(this.seabedSlidingDir);
-            Files.createDirectories(this.waveDir);
-        } catch (Exception ex) {
-            throw new FileStorageException("Could not create the directory where the uploaded files will be stored.", ex);
-        }
     }
 
     @Override
-    public String storeFile(Path dir, MultipartFile file) {
+    public String storeFile(Dir dir, MultipartFile file) {
+        Path p = this.fileStorageLocation.resolve(dir.getDirName()).toAbsolutePath().normalize();
+        return storeFile(p, file);
+    }
+
+    private String storeFile(Path dir, MultipartFile file) {
         // Normalize file name
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
@@ -69,6 +54,7 @@ public class FileServiceImpl implements FileService {
 
             // Copy file to the target location (Replacing existing file with the same name)
             Path targetLocation = dir.resolve(fileName);
+            checkDir(targetLocation);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             return fileName;
@@ -78,7 +64,12 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Resource loadFileAsResource(Path dir, String fileName) {
+    public Resource loadFileAsResource(Dir dir, String fileName) {
+        Path p = this.fileStorageLocation.resolve(dir.getDirName()).toAbsolutePath().normalize();
+        return loadFileAsResource(p, fileName);
+    }
+
+    private Resource loadFileAsResource(Path dir, String fileName) {
         try {
             Path filePath = dir.resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
@@ -95,10 +86,27 @@ public class FileServiceImpl implements FileService {
     @Override
     public Map<String, String[]> loadAll() {
         Map<String, String[]> allFiles = new HashMap<>();
-        allFiles.put(this.porePressureDir.toFile().getName(), this.porePressureDir.toFile().list());
-        allFiles.put(this.flowRateDir.toFile().getName(), this.flowRateDir.toFile().list());
-        allFiles.put(this.seabedSlidingDir.toFile().getName(), this.seabedSlidingDir.toFile().list());
-        allFiles.put(this.waveDir.toFile().getName(), this.waveDir.toFile().list());
+        Arrays.stream(Dir.values())
+                .forEach(dir -> allFiles.put(dir.name(), this.fileStorageLocation.resolve(dir.getDirName()).toFile().list()));
         return allFiles;
+    }
+
+    @Override
+    public void deleteFile(Dir dir, String fileName) {
+        try {
+            Files.delete(this.fileStorageLocation.resolve(dir.getDirName()).resolve(fileName));
+        } catch (IOException e) {
+            throw new FileStorageException("删除文件失败 - " + dir.name() + "/" + fileName, e);
+        }
+    }
+
+    private void checkDir(Path dir) {
+        if (!dir.toFile().exists()) {
+            try {
+                Files.createDirectories(dir);
+            } catch (IOException e) {
+                throw new FileStorageException("创建文件夹失败 - " + dir);
+            }
+        }
     }
 }

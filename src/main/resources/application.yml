@@ -1,9 +1,5 @@
 file:
   upload-dir: /Users/apple/gis/uploads
-  porePressure-dir: pore_pressure
-  flowRate-dir: flow_rate
-  seabedSliding-dir: seabed_sliding
-  wave-dir: wave
 logging:
   level:
     root: info

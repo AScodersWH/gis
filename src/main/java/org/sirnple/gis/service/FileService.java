@@ -1,9 +1,9 @@
 package org.sirnple.gis.service;
 
+import org.sirnple.gis.global.constant.Dir;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -12,9 +12,11 @@ import java.util.Map;
  * Description:
  */
 public interface FileService {
-    String storeFile(Path dir, MultipartFile file);
+    String storeFile(Dir dir, MultipartFile file);
 
-    Resource loadFileAsResource(Path dir, String fileName);
+    Resource loadFileAsResource(Dir dir, String fileName);
 
     Map<String, String[]> loadAll();
+
+    void deleteFile(Dir dir, String fileName);
 }
