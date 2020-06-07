@@ -87,7 +87,7 @@ public class FileServiceImpl implements FileService {
     public Map<String, String[]> loadAll() {
         Map<String, String[]> allFiles = new HashMap<>();
         Arrays.stream(Dir.values())
-                .forEach(dir -> allFiles.put(dir.name(), this.fileStorageLocation.resolve(dir.getDirName()).toFile().list()));
+                .forEach(dir -> allFiles.put(dir.getDirName(), this.fileStorageLocation.resolve(dir.getDirName()).toFile().list()));
         return allFiles;
     }
 
